@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #define T UArray2b_T
 
@@ -128,20 +129,39 @@ extern void UArray2b_map(T array2b,
                          void *elem, void *cl),
                          void *cl)
 {
-    // float width_d = (*array2b)->width;
-    // float height_d = (*array2b)->height;
-    // float blocksize = (*array2b)->blocksize;
-    //
-    // int true_width = ceil(width_d/blocksize);
-    // int true_height = ceil(height_d/blocksize);
 
-    for (int row = 0; row < array2b->height; row++) {
-        for (int col = 0; col < array2b->width; col++) {
-            // UArray_T *to_search = UArray2_at(array2b->array, row/blocksize, column/blocksize);
-            apply(col, row, array2b, UArray2b_at(array2b, col, row), cl);
+    float width_d = (array2b)->width;
+    float height_d = (array2b)->height;
+    int blocksize = (array2b)->blocksize;
+
+    int true_width = ceil(width_d/blocksize);
+    int true_height = ceil(height_d/blocksize);
+
+    //change to width_d
+    //change to height_d
+
+
+    for (int col = 0; col < true_width; col++) {
+        for (int row = 0; row < true_height; row++) {
+            UArray_T *to_search = UArray2_at(array2b->array, row, col);
+            // apply(col, row, array2b, UArray2b_at(array2b, col, row), cl);
+            // UArray_T *to_search = UArray2_at(array2b->array, row/blocksize, col/blocksize);
+            for(int col2 = 0; col2 < width_d; col2++)
+            {
+                for(int row2 = 0; row2 < height_d; row2++)
+                {
+                    apply(col2, row2, array2b, UArray_at(*to_search, (blocksize * (row2 % blocksize) + (col2 % blocksize))), cl);
+                }
+            }
+            // apply(col, row, array2b, UArray_at(*to_search, (blocksize * (row % blocksize) + (col % blocksize))), cl);
 
         }
     }
-
-
 }
+
+// float width_d = (*array2b)->width;
+// float height_d = (*array2b)->height;
+// float blocksize = (*array2b)->blocksize;
+//
+// int true_width = ceil(width_d/blocksize);
+// int true_height = ceil(height_d/blocksize);
