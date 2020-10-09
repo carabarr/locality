@@ -12,8 +12,11 @@ int main() {
     printf("printing height of 8: %d\n", height);
 
     *((int *)UArray2b_at(test_block, 0, 0)) = 5;
+    *((int *)UArray2b_at(test_block, 2, 0)) = 21;
 
-    printf("testing test_block %d\n", *((int *)UArray2b_at(test_block, 0,0)));
+    printf("testing test_block %d\n", *((int *)UArray2b_at(test_block, 2,0)));
+
+    UArray2b_free(&test_block);
 
 
     return 0;
