@@ -36,6 +36,7 @@ extern T UArray2b_new (int width, int height, int size, int blocksize) {
     for (int row = 0; row < true_height; row++) {
         for (int col = 0; col < true_width; col++) {
             UArray_T block = UArray_new(blocksize * blocksize, size);
+            printf("hello row %d col %d\n", row, col);
             UArray_T *block_ptr = UArray2_at(uarray2, row, col);
             *block_ptr = block;
 
@@ -163,8 +164,8 @@ extern void UArray2b_map(T array2b,
             // print_block(*to_search);
 
             for (int i = 0; i < UArray_length(*to_search); i++) {
-                int b_col = i % array2b->blocksize;
-                int b_row = i / array2b->blocksize;
+                int b_col = i / array2b->blocksize;
+                int b_row = i % array2b->blocksize;
                 printf("Client_col %d client_row %d\n", (col * bs + b_col), (row * bs + b_row));
                 if ((col * bs + b_col < cl_w) && (row * bs + b_row < cl_h)) {
                     apply(b_col, b_row, array2b, UArray_at(*to_search, i), cl);
