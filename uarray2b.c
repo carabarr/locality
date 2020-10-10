@@ -53,7 +53,29 @@ extern T UArray2b_new (int width, int height, int size, int blocksize) {
     return blocked_array;
 }
 
-extern T UArray2b_new_64K_block(int width, int height, int size);
+extern T UArray2b_new_64K_block(int width, int height, int size)
+{
+
+    int blocksize;
+
+    if (size > 64 * 1024) {
+        UArray2b_new(width, height, size, 1);
+    } else {
+        blocksize = sqrt(64 * 1024 / size);
+        if (blocksize >= width || blocksize >= height) {
+            if (width > height) {
+                UArray2b_new(width, height, size, width);
+            } else {
+                UArray2b_new(width, height, size, height);
+            }
+        } else {
+            UArray2b_new(width, height, size, blocksize);
+        }
+
+    }
+
+}
+
 
 
 extern void UArray2b_free (T *array2b)
@@ -79,10 +101,6 @@ extern void UArray2b_free (T *array2b)
     free(*array2b);
 
 }
-
-
-
-
 
 extern int UArray2b_width (T array2b)
 {
@@ -116,12 +134,13 @@ extern void *UArray2b_at(T array2b, int column, int row)
     assert(-1 < column && -1 < row);
     int blocksize = array2b->blocksize;
 
-    UArray_T *to_search = UArray2_at(array2b->array, row/blocksize, column/blocksize);
+    UArray_T *to_search = UArray2_at(array2b->array, column/blocksize, row/blocksize);
 
 
-    return UArray_at(*to_search, (blocksize * (row % blocksize) + (column % blocksize)));
+    return UArray_at(*to_search, (blocksize * (column % blocksize) + (row % blocksize)));
 
 }
+
 
 
 extern void UArray2b_map(T array2b,
@@ -129,39 +148,47 @@ extern void UArray2b_map(T array2b,
                          void *elem, void *cl),
                          void *cl)
 {
+    assert(array2b);
+    int h = UArray2_height(array2b->array);
+    int w = UArray2_width(array2b->array);
+    int bs = array2b->blocksize;
 
-    float width_d = (array2b)->width;
-    float height_d = (array2b)->height;
-    int blocksize = (array2b)->blocksize;
+    int cl_h = array2b->height;
+    int cl_w = array2b->width;
 
-    int true_width = ceil(width_d/blocksize);
-    int true_height = ceil(height_d/blocksize);
+    for (int row = 0; row < h; row++) {
+        for (int col = 0; col < w; col++) {
 
-    //change to width_d
-    //change to height_d
+            UArray_T *to_search = UArray2_at(array2b->array, col, row);
+            // print_block(*to_search);
 
-
-    for (int col = 0; col < true_width; col++) {
-        for (int row = 0; row < true_height; row++) {
-            UArray_T *to_search = UArray2_at(array2b->array, row, col);
-            // apply(col, row, array2b, UArray2b_at(array2b, col, row), cl);
-            // UArray_T *to_search = UArray2_at(array2b->array, row/blocksize, col/blocksize);
-            for(int col2 = 0; col2 < width_d; col2++)
-            {
-                for(int row2 = 0; row2 < height_d; row2++)
-                {
-                    apply(col2, row2, array2b, UArray_at(*to_search, (blocksize * (row2 % blocksize) + (col2 % blocksize))), cl);
+            for (int i = 0; i < UArray_length(*to_search); i++) {
+                int b_col = i % array2b->blocksize;
+                int b_row = i / array2b->blocksize;
+                printf("Client_col %d client_row %d\n", (col * bs + b_col), (row * bs + b_row));
+                if ((col * bs + b_col < cl_w) && (row * bs + b_row < cl_h)) {
+                    apply(b_col, b_row, array2b, UArray_at(*to_search, i), cl);
                 }
+
             }
-            // apply(col, row, array2b, UArray_at(*to_search, (blocksize * (row % blocksize) + (col % blocksize))), cl);
 
         }
+
+
+
+    }
+
+}
+
+void print_block(UArray_T block)
+{
+    for (int i = 0; i < UArray_length(block); i++) {
+        printf("%d ", *(int *)UArray_at(block, i));
     }
 }
 
-// float width_d = (*array2b)->width;
-// float height_d = (*array2b)->height;
-// float blocksize = (*array2b)->blocksize;
-//
-// int true_width = ceil(width_d/blocksize);
-// int true_height = ceil(height_d/blocksize);
+int get_index(T array2b, int col, int row)
+{
+    int blocksize = array2b->blocksize;
+    return blocksize * (row % blocksize) + (col % blocksize);
+}
