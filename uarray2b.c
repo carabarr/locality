@@ -19,40 +19,70 @@ struct T {
     int blocksize;
 };
 
-extern T UArray2b_new (int width, int height, int size, int blocksize) {
+extern T UArray2b_new (int width, int height, int size, int blocksize)
+ {
     assert(blocksize >= 1);
     T blocked_array;
     NEW(blocked_array);
+    // UArray2_T test = create_blocked_array(width, height, size, blocksize);
 
-    //transforming this into floats so that the ceiling func works
-    float width_d = width;
-    float height_d = height;
-
-    int true_width = ceil(width_d/blocksize);
-    int true_height = ceil(height_d/blocksize);
-
-    UArray2_T uarray2 = UArray2_new(true_width, true_height, sizeof(UArray_T));
-
-    for (int row = 0; row < true_height; row++) {
-        for (int col = 0; col < true_width; col++) {
-            UArray_T block = UArray_new(blocksize * blocksize, size);
-            printf("hello row %d col %d\n", row, col);
-            UArray_T *block_ptr = UArray2_at(uarray2, row, col);
-            *block_ptr = block;
-
-        }
-    }
-
-    //each cell of the uarray2b is going to be a pointer to a struct (uarray)
+    int true_width = ceil(width/(double)blocksize);
+    int true_height = ceil(height/(double)blocksize);
+   //
     blocked_array->width = width;
     blocked_array->height = height;
-    blocked_array->size = size;
-    blocked_array->array = uarray2;
     blocked_array->blocksize = blocksize;
+    blocked_array->size = size;
+    blocked_array->array = UArray2_new((int)ceil(width/(double)blocksize), (int)ceil(height/(double)blocksize), sizeof(UArray_T));
+
+
+    for(int i = 0; i < (int)ceil(width/(double)blocksize); i++)
+    {
+        for(int j = 0; j < (int)ceil(height/(double)blocksize); j++)
+         {
+             printf("THIS IS I %d\n", i);
+             printf("THIS IS J%d\n", j);
+
+            UArray_T *block = UArray2_at(blocked_array->array, i, j);
+            *block = UArray_new(blocksize*blocksize, size);
+         }
+    }
 
 
     return blocked_array;
+
+
 }
+
+UArray2_T create_blocked_array(int width, int height, int size, int blocksize);
+// {
+//     int true_width = ceil(width/blocksize);
+//     int true_height = ceil(height/blocksize);
+//
+//      UArray2_T block_array = UArray2_new(true_width, true_height, sizeof(UArray_T));
+//
+//      for(int i = 0; i < true_width; i++)
+//      {
+//          for(int j = 0; j < true_height; j++)
+//          {
+//              // printf("THIS IS I %d\n", i);
+//              // printf("THIS IS J%d\n", j);
+//             // UArray_T block = UArray_new(blocksize * blocksize, size);
+//             UArray_T *block = UArray2_at(block_array, i, j);
+//             *block = UArray_new(blocksize * blocksize, size);
+//             // UArray_T *block_ptr = UArray2_at(block_array, i, j);
+//             // *block_ptr = block;
+//
+//          }
+//      }
+//
+//      return block_array;
+//
+//
+// }
+
+
+
 
 extern T UArray2b_new_64K_block(int width, int height, int size)
 {
@@ -81,22 +111,31 @@ extern T UArray2b_new_64K_block(int width, int height, int size)
 
 extern void UArray2b_free (T *array2b)
 {
-
-    float width_d = (*array2b)->width;
-    float height_d = (*array2b)->height;
-    float blocksize = (*array2b)->blocksize;
-
-    int true_width = ceil(width_d/blocksize);
-    int true_height = ceil(height_d/blocksize);
+    //
+    // float width_d = (*array2b)->width;
+    // float height_d = (*array2b)->height;
+    // float blocksize = (*array2b)->blocksize;
+    //
+    // int true_width = ceil(width_d/blocksize);
+    // int true_height = ceil(height_d/blocksize);
     /* frees the memory associated with each block inside of the uarray2 */
-    for (int row = 0; row < true_height; row++) {
-        for (int col = 0; col < true_width; col++) {
-            UArray_T *block_ptr = UArray2_at((*array2b)->array, row, col);
-            UArray_free(&(*block_ptr));
-
-        }
-    }
+    // for (int row = 0; row < true_height; row++) {
+    //     for (int col = 0; col < true_width; col++) {
+    //         UArray_T *block_ptr = UArray2_at((*array2b)->array, row, col);
+    //         UArray_free(&(*block_ptr));
+    //
+    //     }
+    // }
     /* frees the uarray2 itself */
+
+
+        for(int i = 0; i < (int)ceil((*array2b)->width/(double)(*array2b)->blocksize); i++)
+        {
+            for(int j = 0; j < (int)ceil((*array2b)->height/(double)(*array2b)->blocksize); j++)
+             {
+                 UArray_free(UArray2_at((*array2b)->array, i, j));
+             }
+        }
     UArray2_free(&(*array2b)->array);
     /* frees the actual struct that is uarray2b */
     free(*array2b);
@@ -193,3 +232,47 @@ int get_index(T array2b, int col, int row)
     int blocksize = array2b->blocksize;
     return blocksize * (row % blocksize) + (col % blocksize);
 }
+//
+//
+// assert(blocksize >= 1);
+// T blocked_array;
+// NEW(blocked_array);
+//
+// //transforming this into floats so that the ceiling func works
+// float width_d = width;
+// float height_d = height;
+//
+// int true_width = ceil(width_d/blocksize);
+// int true_height = ceil(height_d/blocksize);
+//
+// UArray2_T uarray2 = UArray2_new(true_width, true_height, sizeof(UArray_T));
+// assert(uarray2);
+//
+// printf("true width: %d\n", true_width);
+// printf("true height: %d\n", true_height);
+// printf("Uarray2 width: %d\n",UArray2_width(uarray2) );
+// printf("Uarray2 height: %d\n", UArray2_height(uarray2));
+//
+//
+// for (int row = 0; row < true_height; row++) {
+//     for (int col = 0; col < true_width; col++) {
+//
+//         UArray_T block = UArray_new(blocksize * blocksize, size);
+//         printf("length of block: %d\n", UArray_length(block));
+//
+//         printf("hello row %d col %d\n", row, col);
+//         UArray_T *block_ptr = UArray2_at(uarray2, col, row);
+//         *block_ptr = block;
+//
+//     }
+// }
+//
+// //each cell of the uarray2b is going to be a pointer to a struct (uarray)
+// blocked_array->width = width;
+// blocked_array->height = height;
+// blocked_array->size = size;
+// blocked_array->array = uarray2;
+// blocked_array->blocksize = blocksize;
+//
+//
+// return blocked_array;
