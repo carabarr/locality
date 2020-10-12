@@ -37,6 +37,13 @@ void print_array(A2Methods_T methods, A2 array);
 void check_map(int col, int row, A2 array, void *elem, void *cl);
 void apply_print(int i, int j, A2 array2, void *elem, void *cl);
 void print_pixel(Pnm_rgb pixel);
+void copy_pixmap(int i, int j, A2 array2, void *elem, void *cl);
+
+
+struct array_methods{
+    A2Methods_T methods;
+    A2Methods_UArray2 array;
+};
 
 
 static inline void copy_unsigned(A2Methods_T methods, A2 a,
@@ -105,24 +112,7 @@ int main(int argc, char *argv[])
                         break;
                 }
         }
-        //
-        // printf("hello\n");
-        // A2 test = methods->new(2, 2, 4);
-        //
-        // // test = methods->
-        // copy_unsigned(methods, test, 0, 0, 1);
-        // copy_unsigned(methods, test, 0, 1, 2);
-        // copy_unsigned(methods, test, 1, 0, 3);
-        // copy_unsigned(methods, test, 1, 1, 4);
-        // int *n = methods->at(test, 0, 0);
-        // printf("first thing in array? %d\n", *n);
-        // printf("worked?\n");
-        //
-        // print_array(methods, test);
 
-        // int size = methods->size(array);
-        // Pnm_rgb pixel = test->methods->at(test, 0, 0); segfaults lmao
-        // printf("%d\n", pixel->red);
 
         printf("%d\n", test->methods->height(test));
         if(map == methods->map_col_major){
@@ -132,20 +122,91 @@ int main(int argc, char *argv[])
         }
 
         // Pnm_ppm image;
+        Pnm_ppm transformed = malloc(sizeof(Pnm_ppm));
+
+
+        int size = methods->size(test);
         int width = methods->width(test);
-        map(test->pixels, apply_print, &width);
+        int height = methods->height(test);
+
+        A2 transformed_p = methods->new(width, height, size);
+
+        struct array_methods closure;
+        closure.array = transformed_p;
+        closure.methods = uarray2_methods_plain; //only on plain
 
 
-
-
-
-
+        // //cpu timer outside of map
+        map(test->pixels, copy_pixmap, &closure);
+        test->pixels = transformed_p;
+        FILE *fpw = fopen("test_write.ppm", "w");
+        Pnm_ppmwrite(fpw, test);
+        // map(test->pixels, apply_print, &height);
 
 
 
         return 0;
         // assert(0);  // the rest of this function is not yet implemented
 }
+
+
+void copy_pixmap(int i, int j, A2 array2, void *elem, void *cl)
+{
+    // (void)i;
+    // (void)j;
+    (void)array2;
+
+    struct array_methods *cl_data = cl;
+
+
+    A2 transformed_p = cl_data->array;
+    A2Methods_T methods_apply = cl_data->methods;
+
+
+    Pnm_rgb *curr_pixel = elem; //this is copying current element of original
+                                //new Pnm_rgb instance?
+    Pnm_rgb new_pix = *curr_pixel;
+    // Pnm_rgb *copy_pixel;
+    // *copy_pixel->red = (*curr_pixel)->red;
+    // *copy_pixel->green = (*curr_pixel)->green;
+    // *copy_pixel->blue = (*curr_pixel)->blue;
+
+    Pnm_rgb *pixel_ptr = methods_apply->at(transformed_p, i, j);
+    *pixel_ptr = new_pix;
+    //freeA2
+    // A2 *tran
+    // Pnm_rgb *pixel_ptr = (*transformed_pm)->methods->at((*transformed_pm)->pixels, i, j);
+    // *pixel_ptr = elem;
+    //set rgb values individually!!!!!!
+}
+
+
+
+
+
+
+
+
+
+
+//if you want ot get something out use the closure (for holding the transformed array for the closure)
+void apply_print(int i, int j, A2 array2, void *elem, void *cl)
+{
+    (void)i;
+    (void)j;
+    (void)array2;
+
+    // int *num = elem;
+    // int *num = UArray2_at(array2, i, j);
+    print_pixel(elem);
+    int *width = cl;
+    // if(i == *width - 1) {
+    //     printf("\n");
+    // }
+    // printf("%d ", *num);
+}
+
+
 
 static inline void copy_unsigned(A2Methods_T methods, A2 a,
                                  int i, int j, int n)
@@ -169,23 +230,6 @@ void print_array(A2Methods_T methods, A2 array)
     }
 }
 
-//if you want ot get something out use the closure (for holding the transformed array for the closure)
-void apply_print(int i, int j, A2 array2, void *elem, void *cl)
-{
-    (void)i;
-    (void)j;
-    (void)array2;
-
-    // int *num = elem;
-    // int *num = UArray2_at(array2, i, j);
-    print_pixel(elem);
-    int *width = cl;
-    if(i == *width - 1) {
-        printf("\n");
-    }
-    // printf("%d ", *num);
-}
-
 //rather than working with an A2 we can work with the pixels
 
 void print_pixel(Pnm_rgb pixel)
@@ -194,16 +238,35 @@ void print_pixel(Pnm_rgb pixel)
 
 }
 
+
+
 //
-// void check_map(int col, int row, A2 array, void *elem, void *cl)
-// {
-//     (void)cl;
-//     // (void)elem;
-//     (void)array;
-//     (void)col;
-//     (void)row;
+// printf("hello\n");
+// A2 test = methods->new(2, 2, 4);
 //
-//     // printf("\n");
-//     printf("%d\n", *(int *)elem);
+// // test = methods->
+// copy_unsigned(methods, test, 0, 0, 1);
+// copy_unsigned(methods, test, 0, 1, 2);
+// copy_unsigned(methods, test, 1, 0, 3);
+// copy_unsigned(methods, test, 1, 1, 4);
+// int *n = methods->at(test, 0, 0);
+// printf("first thing in array? %d\n", *n);
+// printf("worked?\n");
 //
-// }
+// print_array(methods, test);
+
+// int size = methods->size(array);
+// Pnm_rgb pixel = test->methods->at(test, 0, 0); segfaults lmao
+// printf("%d\n", pixel->red);
+
+
+
+    // int *num = elem;
+    // int *num = UArray2_at(array2, i, j);
+    //
+    // print_pixel(elem);
+    // int *width = cl;
+    // if(i == *width - 1) {
+    //     printf("\n");
+    // }
+    // printf("%d ", *num);
