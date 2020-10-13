@@ -29,11 +29,12 @@ extern T UArray2b_new (int width, int height, int size, int blocksize)
     int a2_width = ceil(width/(double)blocksize);
     int a2_height = ceil(height/(double)blocksize);
 
-    blocked_array->width = width;
-    blocked_array->height = height;
-    blocked_array->blocksize = blocksize;
-    blocked_array->size = size;
+
+    // printf("SIZE: %d \n", size);
+    // printf("SIZE BLOCKED ARRAY: %d \n", blocked_array->size);
+
     blocked_array->array = UArray2_new(a2_width, a2_height, sizeof(UArray_T));
+
 
 
     for(int i = 0; i < a2_width; i++)
@@ -46,6 +47,12 @@ extern T UArray2b_new (int width, int height, int size, int blocksize)
             *block = UArray_new(blocksize*blocksize, size);
          }
     }
+
+    blocked_array->width = width;
+    blocked_array->height = height;
+    blocked_array->blocksize = blocksize;
+    blocked_array->size = size;
+
 
 
     return blocked_array;
@@ -66,14 +73,15 @@ extern T UArray2b_new_64K_block(int width, int height, int size)
     blocksize = sqrt(64 * 1024 / size);
     if (blocksize >= width || blocksize >= height) {
         if (width > height) {
+
             return UArray2b_new(width, height, size, width);
+        } else if (height > width){
+
+            return UArray2b_new(width, height, size, height);
         } else {
             return UArray2b_new(width, height, size, height);
         }
     }
-
-    return UArray2b_new(width, height, size, blocksize);
-
 }
 
 
@@ -116,6 +124,7 @@ extern int UArray2b_height (T array2b)
 extern int UArray2b_size (T array2b)
 {
     assert(array2b);
+    // printf("SIZE 2b: %d", array2b->size);
     return array2b->size;
 
 }
