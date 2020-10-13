@@ -156,6 +156,8 @@ int main(int argc, char *argv[])
 
             map(test->pixels, rotate_90, &closure);
             test->pixels = r_90;
+            test->width = height;
+            test->height = width;
 
         } else if (rotation == 180) {
             //can we give a generalized version of methods to rotation??
@@ -173,12 +175,13 @@ int main(int argc, char *argv[])
             map(test->pixels, rotate_180, &closure);
             test->pixels = r_180;
 
+
         } else {
             A2 copy = methods->new(width, height, size);
 
             closure.array = copy;
 
-            closure.methods = uarray2_methods_blocked;
+            closure.methods = uarray2_methods_plain;
 
             map(test->pixels, copy_pixmap, &closure);
             test->pixels = copy;
@@ -190,7 +193,7 @@ int main(int argc, char *argv[])
 
         //print to a file,
         //rotation, col/block/row, type
-        printf ("Mapping time was computed in %.0f nanoseconds\n", time_used);
+        // printf ("Mapping time was computed in %.0f nanoseconds\n", time_used);
         Pnm_ppmwrite(stdout, test);
 
         return 0;
@@ -219,10 +222,15 @@ void rotate_90(int i, int j, A2 array2, void *elem, void *cl)
     A2 transformed_p = cl_data->array;
     A2Methods_T methods_apply = cl_data->methods;
 
-    int h = methods_apply->height(transformed_p);
+    int h = methods_apply->width(transformed_p);
+    // printf("THIS IS WIDth: %d \n", h);
+    // printf("H: %d\n", h);
 
 
+    // printf("THIS IS I: %d %d \n", i, j);
     *(Pnm_rgb )methods_apply->at(transformed_p, (h - j - 1), i) = *(Pnm_rgb )elem;
+
+
 
 }
 
