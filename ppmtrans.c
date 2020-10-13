@@ -9,7 +9,7 @@
 #include "a2blocked.h"
 #include "pnm.h"
 #include <mem.h>
-
+#include "cputiming.h"
 
 #define SET_METHODS(METHODS, MAP, WHAT) do {                    \
         methods = (METHODS);                                    \
@@ -59,6 +59,7 @@ int main(int argc, char *argv[])
         char *time_file_name = NULL;
         int   rotation       = 0;
         int   i;
+        FILE *fp;
 
         /* default to UArray2 methods */
         A2Methods_T methods = uarray2_methods_plain;
@@ -69,8 +70,11 @@ int main(int argc, char *argv[])
         assert(map);
 
         Pnm_ppm test;
+        // printf("WIDTH OF SIZE: %d\n", test->methods->size(test->pixels));
+        //
 
         for (i = 1; i < argc; i++) {
+
                 if (strcmp(argv[i], "-row-major") == 0) {
                         SET_METHODS(uarray2_methods_plain, map_row_major,
 				    "row-major");
@@ -103,37 +107,67 @@ int main(int argc, char *argv[])
                 } else if (argc - i > 1) {
                         fprintf(stderr, "Too many arguments\n");
                         usage(argv[0]);
-                } else if (access(argv[i], R_OK) == 0) {
-                    FILE *fp = fopen(argv[i], "r");
-                    if(fp != NULL) {
-                        test = Pnm_ppmread(fp, methods);
-                    }
-                    // assert(fp != NULL);
-                } else {
-                        break;
                 }
+
         }
 
+            if (access(argv[argc - 1], R_OK) == 0)
+            {
+
+                fp = fopen(argv[argc - 1], "r");
+                if(fp != NULL) {
+                // printf("file opened!\n" );
+                    test = Pnm_ppmread(fp, methods);
+                // printf("file opened!222\n" );
+            }
+
+            // assert(fp != NULL);
+            } else {
+                fp = stdin;
+                test = Pnm_ppmread(fp, methods);
+            }
+
+
+
+        CPUTime_T timer;
+        timer = CPUTime_New();
+        double time_used;
+
+
         struct array_methods closure;
-        closure.methods = uarray2_methods_plain; //only on plain
+        //only on plain
+
+        int size = methods->size(test->pixels);
+        int height = methods->height(test->pixels);
+        int width = methods->width(test->pixels);
 
 
-        int size = methods->size(test);
-        int height = methods->height(test);
-        int width = methods->width(test);
+
+        CPUTime_Start(timer);
+
+
 
         if (rotation == 90) {
-            // printf("we should be rotatin\n");
 
-            //switching width and height here
             A2 r_90 = methods->new(height, width, size);
+            closure.methods = uarray2_methods_plain;
+            // A2 r_90 = methods->new_with_blocksize(height, width, size, 2);
             closure.array = r_90;
 
             map(test->pixels, rotate_90, &closure);
             test->pixels = r_90;
 
         } else if (rotation == 180) {
+            //can we give a generalized version of methods to rotation??
+            //can we just do rotations with row major or does that defeat
+            //the point of the assingment?
+            //
+            //when the user calls -block-major -rotate-180 dies that mean
+            // that they want the rotation to be performed block major??
+            // what do we write in the timing output
             A2 r_180 = methods->new(width, height, size);
+            closure.methods = uarray2_methods_plain;
+
             closure.array = r_180;
 
             map(test->pixels, rotate_180, &closure);
@@ -141,8 +175,10 @@ int main(int argc, char *argv[])
 
         } else {
             A2 copy = methods->new(width, height, size);
+
             closure.array = copy;
 
+            closure.methods = uarray2_methods_blocked;
 
             map(test->pixels, copy_pixmap, &closure);
             test->pixels = copy;
@@ -150,11 +186,12 @@ int main(int argc, char *argv[])
 
         }
 
+        time_used = CPUTime_Stop(timer);
 
+        //print to a file,
+        //rotation, col/block/row, type
+        printf ("Mapping time was computed in %.0f nanoseconds\n", time_used);
         Pnm_ppmwrite(stdout, test);
-
-
-
 
         return 0;
 
