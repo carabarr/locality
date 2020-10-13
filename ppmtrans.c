@@ -8,6 +8,8 @@
 #include "a2plain.h"
 #include "a2blocked.h"
 #include "pnm.h"
+#include <mem.h>
+
 
 #define SET_METHODS(METHODS, MAP, WHAT) do {                    \
         methods = (METHODS);                                    \
@@ -38,6 +40,9 @@ void check_map(int col, int row, A2 array, void *elem, void *cl);
 void apply_print(int i, int j, A2 array2, void *elem, void *cl);
 void print_pixel(Pnm_rgb pixel);
 void copy_pixmap(int i, int j, A2 array2, void *elem, void *cl);
+void rotate_90(int i, int j, A2 array2, void *elem, void *cl);
+void rotate_180(int i, int j, A2 array2, void *elem, void *cl);
+// struct Pnm_rgb set_rgb(Pnm_rgb *curr_pixel);
 
 
 struct array_methods{
@@ -69,11 +74,9 @@ int main(int argc, char *argv[])
                 if (strcmp(argv[i], "-row-major") == 0) {
                         SET_METHODS(uarray2_methods_plain, map_row_major,
 				    "row-major");
-                    printf("good?? we should be here\n");
                 } else if (strcmp(argv[i], "-col-major") == 0) {
                         SET_METHODS(uarray2_methods_plain, map_col_major,
 				    "column-major");
-                    printf("now we should be here\n");
                 } else if (strcmp(argv[i], "-block-major") == 0) {
                         SET_METHODS(uarray2_methods_blocked, map_block_major,
                                     "block-major");
@@ -101,8 +104,6 @@ int main(int argc, char *argv[])
                         fprintf(stderr, "Too many arguments\n");
                         usage(argv[0]);
                 } else if (access(argv[i], R_OK) == 0) {
-                    //that means we can read??
-                    printf("success?? question mark??\n");
                     FILE *fp = fopen(argv[i], "r");
                     if(fp != NULL) {
                         test = Pnm_ppmread(fp, methods);
@@ -113,71 +114,95 @@ int main(int argc, char *argv[])
                 }
         }
 
-
-        printf("%d\n", test->methods->height(test));
-        if(map == methods->map_col_major){
-            printf("this should be set to col major \n");
-        } else {
-            printf("is default row major\n");
-        }
-
-        // Pnm_ppm image;
-        Pnm_ppm transformed = malloc(sizeof(Pnm_ppm));
-
-
-        int size = methods->size(test);
-        int width = methods->width(test);
-        int height = methods->height(test);
-
-        A2 transformed_p = methods->new(width, height, size);
-
         struct array_methods closure;
-        closure.array = transformed_p;
         closure.methods = uarray2_methods_plain; //only on plain
 
 
-        // //cpu timer outside of map
-        map(test->pixels, copy_pixmap, &closure);
-        test->pixels = transformed_p;
-        FILE *fpw = fopen("test_write.ppm", "w");
-        Pnm_ppmwrite(fpw, test);
-        // map(test->pixels, apply_print, &height);
+        int size = methods->size(test);
+        int height = methods->height(test);
+        int width = methods->width(test);
+
+        if (rotation == 90) {
+            // printf("we should be rotatin\n");
+
+            //switching width and height here
+            A2 r_90 = methods->new(height, width, size);
+            closure.array = r_90;
+
+            map(test->pixels, rotate_90, &closure);
+            test->pixels = r_90;
+
+        } else if (rotation == 180) {
+            A2 r_180 = methods->new(width, height, size);
+            closure.array = r_180;
+
+            map(test->pixels, rotate_180, &closure);
+            test->pixels = r_180;
+
+        } else {
+            A2 copy = methods->new(width, height, size);
+            closure.array = copy;
+
+
+            map(test->pixels, copy_pixmap, &closure);
+            test->pixels = copy;
+
+
+        }
+
+
+        Pnm_ppmwrite(stdout, test);
+
 
 
 
         return 0;
-        // assert(0);  // the rest of this function is not yet implemented
+
 }
 
 
 void copy_pixmap(int i, int j, A2 array2, void *elem, void *cl)
 {
-    // (void)i;
-    // (void)j;
     (void)array2;
 
     struct array_methods *cl_data = cl;
-
-
     A2 transformed_p = cl_data->array;
     A2Methods_T methods_apply = cl_data->methods;
 
+    *(Pnm_rgb )methods_apply->at(transformed_p, i, j) = *(Pnm_rgb )elem;
 
-    Pnm_rgb *curr_pixel = elem; //this is copying current element of original
-                                //new Pnm_rgb instance?
-    Pnm_rgb new_pix = *curr_pixel;
-    // Pnm_rgb *copy_pixel;
-    // *copy_pixel->red = (*curr_pixel)->red;
-    // *copy_pixel->green = (*curr_pixel)->green;
-    // *copy_pixel->blue = (*curr_pixel)->blue;
+}
 
-    Pnm_rgb *pixel_ptr = methods_apply->at(transformed_p, i, j);
-    *pixel_ptr = new_pix;
-    //freeA2
-    // A2 *tran
-    // Pnm_rgb *pixel_ptr = (*transformed_pm)->methods->at((*transformed_pm)->pixels, i, j);
-    // *pixel_ptr = elem;
-    //set rgb values individually!!!!!!
+//WE NEED TO SWITCH HEIGHT WITH WIDTH
+void rotate_90(int i, int j, A2 array2, void *elem, void *cl)
+{
+    (void)array2;
+
+    struct array_methods *cl_data = cl;
+    A2 transformed_p = cl_data->array;
+    A2Methods_T methods_apply = cl_data->methods;
+
+    int h = methods_apply->height(transformed_p);
+
+
+    *(Pnm_rgb )methods_apply->at(transformed_p, (h - j - 1), i) = *(Pnm_rgb )elem;
+
+}
+
+void rotate_180(int i, int j, A2 array2, void *elem, void *cl)
+{
+    (void)array2;
+
+    struct array_methods *cl_data = cl;
+    A2 transformed_p = cl_data->array;
+    A2Methods_T methods_apply = cl_data->methods;
+
+    int h = methods_apply->height(transformed_p);
+    int w = methods_apply->width(transformed_p);
+
+
+    *(Pnm_rgb )methods_apply->at(transformed_p, (w - i - 1), (h - j - 1)) = *(Pnm_rgb )elem;
+
 }
 
 
@@ -196,14 +221,14 @@ void apply_print(int i, int j, A2 array2, void *elem, void *cl)
     (void)j;
     (void)array2;
 
-    // int *num = elem;
+    int *num = elem;
     // int *num = UArray2_at(array2, i, j);
     print_pixel(elem);
     int *width = cl;
-    // if(i == *width - 1) {
-    //     printf("\n");
-    // }
-    // printf("%d ", *num);
+    if(i == *width - 1) {
+        printf("\n");
+    }
+    printf("%d ", *num);
 }
 
 
@@ -238,6 +263,15 @@ void print_pixel(Pnm_rgb pixel)
 
 }
 
+// struct Pnm_rgb set_rgb(Pnm_rgb *curr_pixel)
+// {
+//     Pnm_rgb new_pixel = malloc(sizeof(Pnm_rgb));
+//     new_pixel->red = (*curr_pixel)->red;
+//     new_pixel->green = (*curr_pixel)->green;
+//     new_pixel->blue = (*curr_pixel)->blue;
+//
+//     return new_pixel;
+// }
 
 
 //
@@ -270,3 +304,63 @@ void print_pixel(Pnm_rgb pixel)
     //     printf("\n");
     // }
     // printf("%d ", *num);
+
+
+    // void copy_pixmap(int i, int j, A2 array2, void *elem, void *cl)
+    // {
+    //     (void)array2;
+    //
+    //     struct array_methods *cl_data = cl;
+    //     A2 transformed_p = cl_data->array;
+    //     A2Methods_T methods_apply = cl_data->methods;
+    //
+    //     //HOLY GRAIL DONT TOUCH ANYMORE
+    //     Pnm_rgb curr_pixel = elem; //this is copying current element of
+    //                                 // original new Pnm_rgb instance?
+    //
+    //     Pnm_rgb new_pix = malloc(sizeof(struct Pnm_rgb));
+    //
+    //     new_pix->red = curr_pixel->red;   // assigning values manually works
+    //     new_pix->green = curr_pixel->green;
+    //     new_pix->blue = curr_pixel->blue;
+    //
+    //     // printf("printing pixel before adding\n");
+    //     // print_pixel(new_pix);
+    //     Pnm_rgb *pixel_ptr = &new_pix
+    //
+    //     Pnm_rgb *pixel_ptr = methods_apply->at(transformed_p, i, j); //are these pointing to the same thing???????
+    //     // if(pixel_ptr == methods_apply->at(transformed_p, i, j)) {
+    //     //     printf("success?\n");
+    //     // }
+    //     pixel_ptr = &new_pix;
+    //     // printf("printing pixel after adding\n");
+    //     // print_pixel(methods_apply->at(transformed_p, i, j));
+    //     // printf("did we fuck up new pix??\n");
+    //     // print_pixel(new_pix);
+    //     printf("what happens when we dereference pixel_ptr??\n");
+    //     print_pixel(*pixel_ptr);
+    //
+    //
+    // }
+
+
+    // (void)array2;
+    //
+    // struct array_methods *cl_data = cl;
+    // A2 transformed_p = cl_data->array;
+    // A2Methods_T methods_apply = cl_data->methods;
+    //
+    // //HOLY GRAIL DONT TOUCH ANYMORE
+    // Pnm_rgb curr_pixel = elem; //this is copying current element of
+    //
+    //
+    // Pnm_rgb new_pix = malloc(sizeof(struct Pnm_rgb));
+    //
+    // new_pix->red = curr_pixel->red;   // assigning values manually works
+    // new_pix->green = curr_pixel->green;
+    // new_pix->blue = curr_pixel->blue;
+    //
+    //
+    // Pnm_rgb *pixel_ptr = &new_pix;
+    // //WTF TWFTFWTEFTWYFTYFA how does this work???
+    // *(Pnm_rgb )methods_apply->at(transformed_p, i, j) = **pixel_ptr;
