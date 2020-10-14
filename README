@@ -1,0 +1,42 @@
+
+A. Programming Partners
+
+        Claudia Aranda (carand02) and Gladys Velasquez (gvelas02)
+
+****************************************************************************
+B. Acknowledgements
+
+        We spoke to SEVERAL TAs over the week:
+        Michael, Ben, Julia, Sejal, Sinan, Teo, Adam, etc and many more!
+
+****************************************************************************
+C. Implementation
+
+    We believe that our implementation for all parts are correct.
+    We have tested our implementation for UArrab2b and pnmtrans and believe
+    that all functions behave properly with the test files given and test
+    files we have created on our own. All of the pnmtranns commands work
+    properly. Some of our tests come from /comp/40/bin/images/. We did not
+    implement ANY extra credit options.
+
+
+****************************************************************************
+D. Documentation/architecture
+
+    For UArray2b:
+
+    For UArray2b, we closely followed the spec's sample architecture.
+    Our UArray2b is represented by a UArray2_T, where each element contains
+    one block. Each block is represented by ONE UArray_T.
+
+    For pnmtrans:
+
+    We used the driver code directly provided on page 12 and 13 of the spec.
+    We found that using this driver code was relatively easy, and we added
+    the lines of code that decide if a file has been directly piped in or read
+    from standard input. The commands that are typed in by the user are
+    executed by a series of if/else statements, each which call
+
+
+
+****************************************************************************
