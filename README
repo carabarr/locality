@@ -1,4 +1,3 @@
-
 A. Programming Partners
 
         Claudia Aranda (carand02) and Gladys Velasquez (gvelas02)
@@ -37,6 +36,91 @@ D. Documentation/architecture
     from standard input. The commands that are typed in by the user are
     executed by a series of if/else statements, each which call
 
-
-
 ****************************************************************************
+
+E. Measures and Improvements in Locality
+
+    With the caveat of knowing that our block-map doesn't working, we tried
+    these operations on a couple of different files. For the first one we used
+    4x3 image:
+
+    Time measurements for requested operations
+    size of image: 4 x 3
+
+    For the copy operation:
+    Mapping used: block major
+    Total time: 18908.000000
+    Time per pixel: 1575.666667
+
+    Mapping used: col major
+    Total time: 3321.000000
+    Time per pixel: 276.750000
+
+    Mapping used: row major
+    Total time: 3279.000000
+    Time per pixel: 273.250000
+
+    Expectedly, our row major performed better than col major (especially
+    considering the small size of the image) because Array2_at didn't have to
+    skip around too many addresses to get the data from the memory it needed.
+    Sadly our implementation of block mapping doesn't work very well which is
+    why it's taking a long time to finish the copying.
+
+    Time measurements for requested operations
+    size of image: 4 x 3
+    Rotation: 90
+
+    Mapping used: row major
+    For the rotation operation:
+    Total time: 1986.000000
+    Time per pixel: 165.500000
+
+    Mapping used: col major
+    Total time: 1874.000000
+    Time per pixel: 156.166667
+
+    Mapping used: block major
+    Total time: 18399.000000
+    Time per pixel: 1533.250000
+
+    The col major performed better than the row major on the 90 degree rotation,
+    which can be attributed to the fact that the math necessary for this
+    operation already makes the sear in different UArrays so it doesn't benefit
+    as much from all the addresses in a row being right next to each other in
+    the cache.
+
+    Time measurements for requested operations
+    size of image: 4 x 3
+    Rotation: 180
+
+    Mapping used: block major
+    Total time: 18704.000000
+    Rotation: 180
+    Time per pixel: 1558.666667
+
+    Mapping used: col major
+    Total time: 2017.000000
+    Rotation: 180
+    Time per pixel: 168.083333
+
+    Mapping used: row major
+    Total time: 1868.000000
+    Rotation: 180
+    Time per pixel: 155.666667
+
+    When doing the 180 degree rotations we can see how similar the times of
+    row major and col major are to col major and row major respectively in
+    the 90 degree rotation. This is also because the math for a 180 degree
+    rotation makes it easier for the rows to be accessed, as it is just
+    a reversal of rows from the bottom up.
+
+    These are the specs of the halligan computer we tried these tests on:
+    processor       : 0
+    vendor_id       : GenuineIntel
+    cpu family      : 6
+    model           : 85
+    model name      : Intel(R) Xeon(R) Silver 4214Y CPU @ 2.20GHz
+    stepping        : 7
+    microcode       : 0x5000029
+    cpu MHz         : 2194.844
+    cache size      : 16896 KB
