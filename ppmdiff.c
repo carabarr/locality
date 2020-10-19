@@ -37,7 +37,8 @@ Pnm_float convert_to_float(Pnm_rgb pixel, int denominator);
 
 float root_mean_sqr_diff(Pnm_ppm image_1, Pnm_ppm image_2, A2Methods_T methods);
 // ENUMERATE LATER: RED 0 GREEN 1 BLUE 2
-float numerator(Pnm_ppm image_1, Pnm_ppm image_2, A2Methods_T methods, int w, int h);
+float sum_diff(Pnm_ppm image_1, Pnm_ppm image_2, A2Methods_T methods, int w, int h);
+
 
 
 
@@ -126,9 +127,18 @@ int main(int argc, char *argv[]) {
 
     image_1->pixels = closure.array; //floating point supremacy
 
+    methods->map_row_major(image_2->pixels, apply_convers, &closure);
+    methods->free(&(image_2->pixels)); //we free memory of previous integer vals
+
+    image_2->pixels = closure.array;
+
     printf("should be printing in floats\n");
     Pnm_float pixel_test = methods->at(image_1->pixels, 1, 1);
     printf("blue %.2f\n", pixel_test->blue);
+
+    float diff = root_mean_sqr_diff(image_1, image_2, methods);
+
+    printf("E VALUE: %f\n", diff);
 
     return 0;
 }
@@ -247,7 +257,7 @@ float root_mean_sqr_diff(Pnm_ppm image_1, Pnm_ppm image_2, A2Methods_T methods)
         h = image_1->height;
     }
 
-    float numerator = numerator(image_1, image_2, methods, w, h);
+    float numerator = sum_diff(image_1, image_2, methods, w, h);
 
     //divide over 3 x w x h
     float fraction = numerator / (3 * w * h);
@@ -259,7 +269,7 @@ float root_mean_sqr_diff(Pnm_ppm image_1, Pnm_ppm image_2, A2Methods_T methods)
 
 }
 
-float numerator(Pnm_ppm image_1, Pnm_ppm image_2, A2Methods_T methods,
+float sum_diff(Pnm_ppm image_1, Pnm_ppm image_2, A2Methods_T methods,
                 int w, int h)
 {
     float sum = 0;
